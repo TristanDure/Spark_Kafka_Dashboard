@@ -1,0 +1,28 @@
+.header {
+	width: 100%;
+	height: 100px;
+    margin: 10px;
+}
+.header_ul {
+	float: left;
+    list-style: none;
+}
+.header_ul li {
+	margin-top: 26px;
+	margin-left: 15px;
+	float: left;
+    color: blue;
+}
+
+.header_ul li:hover {
+	color: blue;
+}
+li {
+     float: left;
+    border-radius: 15px 15px 0 0;
+   }
+a:hover {        /* 鼠标指针移动到链接上 */
+  color: white;
+  height: 30px;
+  background: #f00;
+}

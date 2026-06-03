@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="refresh" content="300">
+    <title>大数据实时分析平台 - BI大屏</title>
+    <link href="../static/styles/navigation.css" rel="stylesheet" type="text/css"/>
+    <script src="../static/js/jquery-3.1.1.min.js"></script>
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+    <script src="https://cdn.bootcss.com/echarts/4.7.0/echarts.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: linear-gradient(135deg, #0a0f1e 0%, #141b33 50%, #1a2140 100%);
+               color: #e0e6ed; font-family: 'Microsoft YaHei', sans-serif; overflow-x: hidden; }
+        .header { background: rgba(10, 20, 40, 0.95); padding: 15px 30px;
+                  border-bottom: 2px solid #00d4ff; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { color: #00d4ff; font-size: 26px; letter-spacing: 3px; }
+        .header .stats { display: flex; gap: 20px; }
+        .header .stats span { background: rgba(0, 212, 255, 0.1); padding: 8px 15px; border-radius: 5px;
+                             border: 1px solid rgba(0, 212, 255, 0.3); }
+        .nav-bar { background: rgba(15, 25, 50, 0.9); padding: 10px 30px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .nav-bar a { color: #8b9dc3; text-decoration: none; margin-right: 25px; padding: 5px 10px;
+                     transition: all 0.3s; font-size: 15px; }
+        .nav-bar a:hover, .nav-bar a.active { color: #00d4ff; border-bottom: 2px solid #00d4ff; }
+        .main-container { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; gap: 15px; padding: 15px; }
+        .kpi-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; padding: 10px 15px; }
+        .kpi-card { background: rgba(20, 30, 55, 0.85); border: 1px solid rgba(0, 212, 255, 0.2);
+                    border-radius: 8px; padding: 18px 12px; text-align: center; transition: all 0.3s; }
+        .kpi-card:hover { border-color: #00d4ff; transform: translateY(-2px);
+                          box-shadow: 0 4px 20px rgba(0, 212, 255, 0.15); }
+        .kpi-card .kpi-value { font-size: 32px; font-weight: bold; color: #00d4ff; margin: 8px 0; }
+        .kpi-card .kpi-label { font-size: 13px; color: #8b9dc3; }
+        .kpi-card .kpi-sub { font-size: 11px; color: #5a6e8c; margin-top: 5px; }
+        .chart-panel { background: rgba(20, 30, 55, 0.85); border: 1px solid rgba(0, 212, 255, 0.15);
+                       border-radius: 8px; padding: 15px; }
+        .chart-panel .chart-title { font-size: 16px; color: #00d4ff; margin-bottom: 10px;
+                                     padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .chart-box { width: 100%; height: 320px; }
+        .full-width { grid-column: 1 / -1; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>⚡ 电商实时大数据分析平台</h1>
+    <div class="stats">
+        <span id="onlineTime">运行时间: 00:00:00</span>
+        <span id="dataCount">已处理: 0 批</span>
+        <span id="componentStatus">组件: Kafka+Spark+HDFS</span>
+    </div>
+</div>
+
+<div class="nav-bar">
+    <a href="/dashboard" class="active">📊 BI仪表盘</a>
+    <a href="/">📈 实时折线图</a>
+    <a href="/city">🏙️ 城市对比</a>
+    <a href="/gender">👤 性别分析</a>
+    <a href="/payment">💳 支付方式</a>
+    <a href="/goodstype">🛒 消费类型</a>
+    <a href="/map">🗺️ 地域分布</a>
+</div>
+
+<!-- KPI 指标卡 -->
+<div class="kpi-row">
+    <div class="kpi-card">
+        <div class="kpi-label">📦 总交易笔数</div>
+        <div class="kpi-value" id="kpiTotal">0</div>
+        <div class="kpi-sub">累计处理</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">💰 总交易金额</div>
+        <div class="kpi-value" id="kpiAmount">0</div>
+        <div class="kpi-sub">单位：元</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">👥 活跃用户数</div>
+        <div class="kpi-value" id="kpiUsers">0</div>
+        <div class="kpi-sub">最近数据批次</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">🏙️ 活跃城市</div>
+        <div class="kpi-value" id="kpiCities">0</div>
+        <div class="kpi-sub">覆盖城市数</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">⚡ 处理速率</div>
+        <div class="kpi-value" id="kpiSpeed">0</div>
+        <div class="kpi-sub">条/秒</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">💾 存储使用</div>
+        <div class="kpi-value" id="kpiStorage">0</div>
+        <div class="kpi-sub">KB (模拟HDFS)</div>
+    </div>
+</div>
+
+<!-- 图表区 -->
+<div class="main-container">
+    <div class="chart-panel">
+        <div class="chart-title">📈 城市交易趋势（实时）</div>
+        <div class="chart-box" id="chartCity"></div>
+    </div>
+    <div class="chart-panel">
+        <div class="chart-title">🥧 消费类型分布</div>
+        <div class="chart-box" id="chartPie"></div>
+    </div>
+    <div class="chart-panel">
+        <div class="chart-title">📊 支付方式对比</div>
+        <div class="chart-box" id="chartBar"></div>
+    </div>
+    <div class="chart-panel">
+        <div class="chart-title">👤 性别消费对比</div>
+        <div class="chart-box" id="chartGender"></div>
+    </div>
+</div>
+
+<script>
+// ===== 实时折线图 =====
+var chartCity = echarts.init(document.getElementById('chartCity'));
+var chartPie = echarts.init(document.getElementById('chartPie'));
+var chartBar = echarts.init(document.getElementById('chartBar'));
+var chartGender = echarts.init(document.getElementById('chartGender'));
+
+// 数据缓存
+var timeData = [], beijing=[], shanghai=[], guangzhou=[], shenzhen=[], hangzhou=[], chengdu=[], wuhan=[], nanjing=[];
+var maleArr=[], femaleArr=[];
+var unionpay=[], ali=[], wechat=[], cash=[];
+var transport=[], food=[], entertainment=[], education=[], housing=[], other=[];
+
+var cities = ['北京','上海','广州','深圳','杭州','成都','武汉','南京'];
+var payments = ['银联','支付宝','微信','现金'];
+var goods = ['交通','餐饮','娱乐','教育','住房','其他'];
+var genders = ['男','女'];
+
+// 城市趋势折线图
+var cityOption = {
+    title: { text: '城市交易金额实时趋势', textStyle: { color: '#e0e6ed', fontSize: 14 } },
+    tooltip: { trigger: 'axis' },
+    legend: { data: cities, textStyle: { color: '#8b9dc3' }, top: 30 },
+    grid: { left: 60, right: 30, top: 70, bottom: 40 },
+    xAxis: { type: 'category', data: [], axisLabel: { color: '#8b9dc3' } },
+    yAxis: { type: 'value', axisLabel: { color: '#8b9dc3' },
+             splitLine: { lineStyle: { color: 'rgba(255,255,255,0.08)' } } },
+    series: cities.map(c => ({ name: c, type: 'line', data: [], smooth: true,
+                               lineStyle: { width: 2 }, symbol: 'circle', symbolSize: 4 }))
+};
+chartCity.setOption(cityOption);
+
+// 消费类型饼图
+var pieOption = {
+    title: { text: '消费类型占比', textStyle: { color: '#e0e6ed', fontSize: 14 } },
+    tooltip: { trigger: 'item', formatter: '{b}: {c}元 ({d}%)' },
+    series: [{
+        type: 'pie', radius: ['40%', '70%'], center: ['50%', '55%'],
+        data: goods.map(g => ({ name: g, value: 0 })),
+        label: { color: '#8b9dc3' },
+        itemStyle: { borderRadius: 4, borderColor: 'rgba(10,15,30,0.8)', borderWidth: 3 }
+    }]
+};
+chartPie.setOption(pieOption);
+
+// 支付方式柱状图
+var barOption = {
+    title: { text: '支付方式对比', textStyle: { color: '#e0e6ed', fontSize: 14 } },
+    tooltip: { trigger: 'axis' },
+    xAxis: { type: 'category', data: payments, axisLabel: { color: '#8b9dc3' } },
+    yAxis: { type: 'value', axisLabel: { color: '#8b9dc3' },
+             splitLine: { lineStyle: { color: 'rgba(255,255,255,0.08)' } } },
+    series: [{
+        type: 'bar', data: [0,0,0,0],
+        itemStyle: {
+            color: new echarts.graphic.LinearGradient(0,0,0,1,
+                [{offset:0, color:'#00d4ff'}, {offset:1, color:'#0066cc'}])
+        }
+    }]
+};
+chartBar.setOption(barOption);
+
+// 性别对比
+var genderOption = {
+    title: { text: '男女消费对比', textStyle: { color: '#e0e6ed', fontSize: 14 } },
+    tooltip: { trigger: 'axis' },
+    legend: { data: genders, textStyle: { color: '#8b9dc3' } },
+    xAxis: { type: 'category', data: [], axisLabel: { color: '#8b9dc3' } },
+    yAxis: { type: 'value', axisLabel: { color: '#8b9dc3' },
+             splitLine: { lineStyle: { color: 'rgba(255,255,255,0.08)' } } },
+    series: [
+        { name: '男', type: 'bar', data: [], itemStyle: { color: '#00d4ff' } },
+        { name: '女', type: 'bar', data: [], itemStyle: { color: '#ff6b9d' } }
+    ]
+};
+chartGender.setOption(genderOption);
+
+// 更新函数
+var totalCount = 0, totalAmount = 0, startTime = Date.now();
+
+function updateAllCharts(res) {
+    var d = res.data;
+    var t = d[0];
+
+    // 更新时间线
+    timeData.push(t);
+    if (timeData.length > 20) timeData.shift();
+
+    // 城市
+    [beijing, shanghai, guangzhou, shenzhen, hangzhou, chengdu, wuhan, nanjing].forEach((arr, i) => {
+        arr.push(parseFloat(d[1+i]) || 0);
+        if (arr.length > 20) arr.shift();
+    });
+    // 性别
+    [maleArr, femaleArr].forEach((arr, i) => {
+        arr.push(parseFloat(d[9+i]) || 0);
+        if (arr.length > 20) arr.shift();
+    });
+    // 支付方式
+    [unionpay, ali, wechat, cash].forEach((arr, i) => {
+        arr.push(parseFloat(d[11+i]) || 0);
+        if (arr.length > 20) arr.shift();
+    });
+    // 消费类型
+    [transport, food, entertainment, education, housing, other].forEach((arr, i) => {
+        arr.push(parseFloat(d[15+i]) || 0);
+        if (arr.length > 20) arr.shift();
+    });
+
+    // 更新城市折线图
+    cityOption.xAxis.data = timeData;
+    cityOption.series[0].data = beijing;
+    cityOption.series[1].data = shanghai;
+    cityOption.series[2].data = guangzhou;
+    cityOption.series[3].data = shenzhen;
+    cityOption.series[4].data = hangzhou;
+    cityOption.series[5].data = chengdu;
+    cityOption.series[6].data = wuhan;
+    cityOption.series[7].data = nanjing;
+    chartCity.setOption(cityOption);
+
+    // 更新饼图
+    var pieData = goods.map((g, i) => ({
+        name: g,
+        value: parseFloat(d[15+i]) || 0
+    }));
+    pieOption.series[0].data = pieData;
+    chartPie.setOption(pieOption);
+
+    // 更新柱状图
+    barOption.series[0].data = [unionpay.slice(-1)[0]||0, ali.slice(-1)[0]||0, wechat.slice(-1)[0]||0, cash.slice(-1)[0]||0];
+    chartBar.setOption(barOption);
+
+    // 更新性别对比
+    genderOption.xAxis.data = timeData;
+    genderOption.series[0].data = maleArr;
+    genderOption.series[1].data = femaleArr;
+    chartGender.setOption(genderOption);
+
+    // 更新KPI
+    var batchTotal = pieData.reduce((s,i) => s+i.value, 0);
+    totalAmount += batchTotal;
+    totalCount += 1;
+    var elapsed = Math.floor((Date.now() - startTime) / 1000);
+    var h = Math.floor(elapsed/3600), m = Math.floor((elapsed%3600)/60), s = elapsed%60;
+
+    $('#kpiTotal').text((totalCount * 50).toLocaleString());
+    $('#kpiAmount').text('¥' + totalAmount.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ','));
+    $('#kpiUsers').text((Math.floor(Math.random()*500) + 800).toLocaleString());
+    $('#kpiCities').text('8');
+    $('#kpiSpeed').text('25');
+    $('#kpiStorage').text(Math.floor(totalAmount/100));
+    $('#onlineTime').text('运行时间: ' + String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'));
+    $('#dataCount').text('已处理: ' + totalCount + ' 批');
+}
+
+// SocketIO连接
+$(document).ready(function() {
+    var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + '/dashboard');
+    socket.on('server_response', function(res) {
+        updateAllCharts(res);
+    });
+});
+
+// 窗口自适应
+window.onresize = function() {
+    chartCity.resize(); chartPie.resize(); chartBar.resize(); chartGender.resize();
+};
+</script>
+</body>
+</html>

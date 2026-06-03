@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>消费实时监控</title>
+    <script type="text/javascript" src="../static/js/jquery-3.1.1.min.js"></script>
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+    <!-- ECharts 3 引入 -->
+    <script src="https://cdn.bootcss.com/echarts/4.7.0/echarts.min.js" charset="UTF-8"></script>
+
+    <link href="../static/styles/navigation.css" rel="stylesheet" type="text/css"/>
+</head>
+<header>
+    <div class = "header">
+    <nav>
+        <ul class="header_ul">
+            <li><a href="index" title="首页" target="_self">首页</a> </li>
+            <li><a href="city" title="城市" target="_self">城市</a> </li>
+            <li><a href="gender" title="性别" target="_self">性别</a> </li>
+            <li><a href="payment" title="支付方式" target="_self">支付方式</a> </li>
+            <li><a href="goods_type" title="消费类型" target="_self">消费类型</a> </li>
+        </ul>
+    </nav>
+</div>
+</header>
+<body>
+<!--为ECharts准备一个具备大小（宽高）的Dom-->
+<div id="main" style="height:500px;border:1px solid #ccc;padding:10px;"></div>
+
+<script type="text/javascript">
+    var myChart = echarts.init(document.getElementById('main'));
+
+    myChart.setOption({
+        title: {
+            text: '4个一线城市消费实时监控'
+        },
+        tooltip: {},
+        legend: {
+            data:['北京','上海','广州','深圳']
+        },
+        xAxis: {
+            data: []
+        },
+        yAxis: {},
+        series: [{
+            name: 'beijing',
+            type: 'line',
+            data: []
+        },{
+            name: 'shanghai',
+            type: 'line',
+            data: []
+        },{
+            name: 'guangzhou',
+            type: 'line',
+            data: []
+        },{
+            name: 'shenzhen',
+            type: 'line',
+            data: []
+        }]
+    });
+
+
+    var time = ["","","","","","","","","",""],
+        beijing = [0,0,0,0,0,0,0,0,0,0],
+        shanghai = [0,0,0,0,0,0,0,0,0,0],
+        guangzhou = [0,0,0,0,0,0,0,0,0,0],
+        shenzhen = [0,0,0,0,0,0,0,0,0,0]
+
+
+    //准备好统一的 callback 函数
+    var update_mychart = function (res) { //res是json格式的response对象
+
+        // 隐藏加载动画
+        myChart.hideLoading();
+
+        // 准备数据
+        time.push(res.data[0]);
+        beijing.push(parseFloat(res.data[1]));
+        shanghai.push(parseFloat(res.data[2]));
+        guangzhou.push(parseFloat(res.data[3]));
+        shenzhen.push(parseFloat(res.data[4]));
+        if (time.length >= 10){
+            time.shift();
+            beijing.shift();
+            shanghai.shift();
+            guangzhou.shift();
+            shenzhen.shift();
+        }
+
+        // 填入数据
+        myChart.setOption({
+            xAxis: {
+                data: time
+            },
+            series: [{
+                name: "北京", // 根据名字对应到相应的系列
+                data: beijing
+            },{
+                name: "上海",
+                data: shanghai
+            },{
+                name: "广州",
+                data: guangzhou
+            },{
+                name: "深圳",
+                data: shenzhen
+            }]
+        });
+
+    };
+
+    // 首次显示加载动画
+    myChart.showLoading();
+
+
+    // 建立socket连接，等待服务器“推送”数据，用回调函数更新图表
+    $(document).ready(function() {
+        namespace = '/dashboard';
+        var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + namespace);
+
+        socket.on('server_response', function(res) {
+            update_mychart(res);
+        });
+
+    });
+
+</script>
+</body>
+</html>

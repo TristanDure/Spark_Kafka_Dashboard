@@ -1,0 +1,185 @@
+{
+  "city_stats": [
+    {
+      "city": "广州",
+      "total_amount": 117321.02,
+      "count": 23
+    },
+    {
+      "city": "南京",
+      "total_amount": 100803.58000000002,
+      "count": 23
+    },
+    {
+      "city": "上海",
+      "total_amount": 63175.58,
+      "count": 11
+    },
+    {
+      "city": "深圳",
+      "total_amount": 54249.66999999999,
+      "count": 10
+    },
+    {
+      "city": "武汉",
+      "total_amount": 49448.82,
+      "count": 10
+    },
+    {
+      "city": "成都",
+      "total_amount": 49278.92,
+      "count": 8
+    },
+    {
+      "city": "北京",
+      "total_amount": 32181.14,
+      "count": 8
+    },
+    {
+      "city": "杭州",
+      "total_amount": 25661.729999999996,
+      "count": 7
+    }
+  ],
+  "gender_stats": [
+    {
+      "gender": "男",
+      "total_amount": 243991.92000000007,
+      "count": 50
+    },
+    {
+      "gender": "女",
+      "total_amount": 248128.53999999992,
+      "count": 50
+    }
+  ],
+  "payment_stats": [
+    {
+      "payment": "现金",
+      "total_amount": 140773.22999999998,
+      "count": 26
+    },
+    {
+      "payment": "支付宝",
+      "total_amount": 139093.71999999997,
+      "count": 27
+    },
+    {
+      "payment": "微信",
+      "total_amount": 130922.45000000003,
+      "count": 27
+    },
+    {
+      "payment": "银联",
+      "total_amount": 81331.06000000001,
+      "count": 20
+    }
+  ],
+  "goods_stats": [
+    {
+      "goods_type": "其他",
+      "total_amount": 125288.27,
+      "count": 24
+    },
+    {
+      "goods_type": "教育",
+      "total_amount": 115904.79000000001,
+      "count": 22
+    },
+    {
+      "goods_type": "住房",
+      "total_amount": 88399.09999999999,
+      "count": 18
+    },
+    {
+      "goods_type": "娱乐",
+      "total_amount": 75393.62,
+      "count": 16
+    },
+    {
+      "goods_type": "交通",
+      "total_amount": 47405.98999999999,
+      "count": 12
+    },
+    {
+      "goods_type": "餐饮",
+      "total_amount": 39728.69,
+      "count": 8
+    }
+  ],
+  "age_stats": [
+    {
+      "age_group": "18-25",
+      "avg_amount": 4569.576363636364,
+      "count": 22
+    },
+    {
+      "age_group": "26-35",
+      "avg_amount": 5452.780000000001,
+      "count": 21
+    },
+    {
+      "age_group": "46-55",
+      "avg_amount": 5074.035625,
+      "count": 16
+    },
+    {
+      "age_group": "36-45",
+      "avg_amount": 4548.648823529412,
+      "count": 17
+    },
+    {
+      "age_group": "55+",
+      "avg_amount": 4940.408333333335,
+      "count": 24
+    }
+  ],
+  "device_stats": [
+    {
+      "device": "PC",
+      "count": 22
+    },
+    {
+      "device": "iOS",
+      "count": 30
+    },
+    {
+      "device": "H5",
+      "count": 33
+    },
+    {
+      "device": "Android",
+      "count": 15
+    }
+  ],
+  "action_stats": [
+    {
+      "action": "purchase",
+      "count": 18
+    },
+    {
+      "action": "view",
+      "count": 18
+    },
+    {
+      "action": "click",
+      "count": 24
+    },
+    {
+      "action": "add_cart",
+      "count": 20
+    },
+    {
+      "action": "pay",
+      "count": 20
+    }
+  ],
+  "overview": {
+    "total_count": 100,
+    "total_amount": 492120.46,
+    "avg_amount": 4921.2,
+    "unique_users": 100,
+    "active_cities": 8
+  },
+  "_timestamp": "2026-06-01 11:20:02"
+}

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>消费实时监控</title>
+    <link href="../static/styles/navigation.css" rel="stylesheet" type="text/css"/>
+    <script type="text/javascript" src="../static/js/jquery-3.1.1.min.js"></script>
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+    <!-- ECharts 3 引入 -->
+    <script src="https://cdn.bootcss.com/echarts/4.7.0/echarts.min.js"></script>
+</head>
+<header>
+    <div class = "header">
+    <nav>
+        <ul class="header_ul">
+            <li><a href="index" title="首页" target="_self">首页</a> </li>
+            <li><a href="city" title="城市" target="_self">城市</a> </li>
+            <li><a href="gender" title="性别" target="_self">性别</a> </li>
+            <li><a href="payment" title="支付方式" target="_self">支付方式</a> </li>
+            <li><a href="goods_type" title="消费类型" target="_self">消费类型</a> </li>
+        </ul>
+    </nav>
+</div>
+</header>
+<body>
+<!--为ECharts准备一个具备大小（宽高）的Dom-->
+<div id="main" style="height:500px;border:1px solid #ccc;padding:10px;"></div>
+
+<script type="text/javascript">
+    var myChart = echarts.init(document.getElementById('main'));
+
+    myChart.setOption({
+        title: {
+            text: '所有消费类型实时监控'
+        },
+        tooltip: {},
+        legend: {
+            data: ['北京', '上海', '广州', '深圳', '男', '女', '银联', '支付宝', '微信', '现金',
+                '交通', '餐饮', '娱乐', '教育', '住房', '其他']
+        },
+        xAxis: {
+            data: []
+        },
+        yAxis: {},
+        series: [{
+            name: 'beijing',
+            type: 'line',
+            data: []
+        },{
+            name: 'shanghai',
+            type: 'line',
+            data: []
+        },{
+            name: 'guangzhou',
+            type: 'line',
+            data: []
+        },{
+            name: 'shenzhen',
+            type: 'line',
+            data: []
+        },{
+            name: 'male',
+            type: 'line',
+            data: []
+        },{
+            name: 'female',
+            type: 'line',
+            data: []
+        },{
+            name: 'unionpay',
+            type: 'line',
+            data: []
+        },{
+            name: 'ali',
+            type: 'line',
+            data: []
+        },{
+            name: 'wechat',
+            type: 'line',
+            data: []
+        },{
+            name: 'cash',
+            type: 'line',
+            data: []
+        },{
+            name: 'transport',
+            type: 'line',
+            data: []
+        },{
+            name: 'food',
+            type: 'line',
+            data: []
+        },{
+            name: 'entertainment',
+            type: 'line',
+            data: []
+        },{
+            name: 'education',
+            type: 'line',
+            data: []
+        },{
+            name: 'housing',
+            type: 'line',
+            data: []
+        },{
+            name: 'other',
+            type: 'line',
+            data: []
+        }]
+    });
+
+
+    var time = ["","","","","","","","","",""],
+        beijing = [0,0,0,0,0,0,0,0,0,0],
+        shanghai = [0,0,0,0,0,0,0,0,0,0],
+        guangzhou = [0,0,0,0,0,0,0,0,0,0],
+        shenzhen = [0,0,0,0,0,0,0,0,0,0],
+        male= [0,0,0,0,0,0,0,0,0,0],
+        female= [0,0,0,0,0,0,0,0,0,0],
+        unionpay= [0,0,0,0,0,0,0,0,0,0],
+        ali= [0,0,0,0,0,0,0,0,0,0],
+        wechat= [0,0,0,0,0,0,0,0,0,0],
+        cash= [0,0,0,0,0,0,0,0,0,0],
+        transport= [0,0,0,0,0,0,0,0,0,0],
+        food= [0,0,0,0,0,0,0,0,0,0],
+        entertainment= [0,0,0,0,0,0,0,0,0,0],
+        education= [0,0,0,0,0,0,0,0,0,0],
+        housing= [0,0,0,0,0,0,0,0,0,0],
+        other= [0,0,0,0,0,0,0,0,0,0]
+
+
+    //准备好统一的 callback 函数
+    var update_mychart = function (res) { //res是json格式的response对象
+
+        // 隐藏加载动画
+        myChart.hideLoading();
+
+        // 准备数据
+        time.push(res.data[0]);
+        beijing.push(parseFloat(res.data[1]));
+        shanghai.push(parseFloat(res.data[2]));
+        guangzhou.push(parseFloat(res.data[3]));
+        shenzhen.push(parseFloat(res.data[4]));
+        male.push(parseFloat(res.data[5]));
+        female.push(parseFloat(res.data[6])); 
+        unionpay.push(parseFloat(res.data[7]));
+        ali.push(parseFloat(res.data[8]));
+        wechat.push(parseFloat(res.data[9]));
+        cash.push(parseFloat(res.data[10]));
+        transport.push(parseFloat(res.data[11]));
+        food.push(parseFloat(res.data[12]));
+        entertainment.push(parseFloat(res.data[13]));
+        education.push(parseFloat(res.data[14])); 
+        housing.push(parseFloat(res.data[15])); 
+        other.push(parseFloat(res.data[16]));
+        if (time.length >= 10){
+            time.shift();
+            beijing.shift();
+            shanghai.shift();
+            guangzhou.shift();
+            shenzhen.shift();
+            male.shift();
+            female.shift();
+            unionpay.shift();
+            ali.shift();
+            wechat.shift();
+            cash.shift();
+            transport.shift();
+            food.shift();
+            entertainment.shift();
+            education.shift();
+            housing.shift();
+            other.shift();
+        }
+
+        // 填入数据
+        myChart.setOption({
+            xAxis: {
+                data: time
+            },
+            series: [{
+                name: '北京', // 根据名字对应到相应的系列
+                data: beijing
+            },{
+                name: '上海',
+                data: shanghai
+            },{
+                name: '广州',
+                data: guangzhou
+            },{
+                name: '深圳',
+                data: shenzhen
+            },{
+                name: '男',
+                data: male
+            },{
+                name: '女',
+                data: female
+            },{
+                name: '银联',
+                data: unionpay
+            },{
+                name: '支付宝',
+                data: ali
+            },{
+                name: '微信',
+                data: wechat
+            },{
+                name: '现金',
+                data: cash
+            },{
+                name: '交通',
+                data: transport
+            },{
+                name: '餐饮',
+                data: food
+            },{
+                name: '娱乐',
+                data: entertainment
+            },{
+                name: '教育',
+                data: education
+            },{
+                name: '住房',
+                data: housing
+            },{
+                name: '其他',
+                data: other
+            }]
+        });
+
+    };
+
+    // 首次显示加载动画
+    myChart.showLoading();
+
+
+    // 建立socket连接，等待服务器“推送”数据，用回调函数更新图表
+    $(document).ready(function() {
+        namespace = '/dashboard';
+        var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + namespace);
+
+        socket.on('server_response', function(res) {
+            update_mychart(res);
+        });
+
+    });
+
+</script>
+</body>
+</html>

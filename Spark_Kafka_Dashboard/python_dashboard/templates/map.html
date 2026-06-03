@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <title>地域分布 - 大数据平台</title>
+    <link href="../static/styles/navigation.css" rel="stylesheet" type="text/css"/>
+    <script src="../static/js/jquery-3.1.1.min.js"></script>
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+    <script src="https://cdn.bootcss.com/echarts/4.7.0/echarts.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: linear-gradient(135deg, #0a0f1e 0%, #141b33 100%);
+               color: #e0e6ed; font-family: 'Microsoft YaHei', sans-serif; }
+        .header { background: rgba(10, 20, 40, 0.95); padding: 15px 30px;
+                  border-bottom: 2px solid #00d4ff; text-align: center; }
+        .header h1 { color: #00d4ff; font-size: 24px; }
+        .nav-bar { background: rgba(15, 25, 50, 0.9); padding: 10px 30px; text-align: center; }
+        .nav-bar a { color: #8b9dc3; text-decoration: none; margin: 0 15px;
+                     padding: 5px 10px; transition: all 0.3s; }
+        .nav-bar a:hover, .nav-bar a.active { color: #00d4ff; border-bottom: 2px solid #00d4ff; }
+        .container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 15px; }
+        .chart-panel { background: rgba(20, 30, 55, 0.85); border: 1px solid rgba(0,212,255,0.15);
+                       border-radius: 8px; padding: 15px; }
+        .chart-title { font-size: 16px; color: #00d4ff; margin-bottom: 10px;
+                       padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        #mapChart { width: 100%; height: 550px; }
+        #barChart { width: 100%; height: 550px; }
+    </style>
+</head>
+<body>
+<div class="header"><h1>🗺️ 全国城市交易地域分布</h1></div>
+<div class="nav-bar">
+    <a href="/dashboard">📊 BI仪表盘</a>
+    <a href="/">📈 实时折线图</a>
+    <a href="/city">🏙️ 城市对比</a>
+    <a href="/gender">👤 性别分析</a>
+    <a href="/payment">💳 支付方式</a>
+    <a href="/goodstype">🛒 消费类型</a>
+    <a href="/map" class="active">🗺️ 地域分布</a>
+</div>
+<div class="container">
+    <div class="chart-panel">
+        <div class="chart-title">📍 交易金额地域分布</div>
+        <div id="mapChart"></div>
+    </div>
+    <div class="chart-panel">
+        <div class="chart-title">🏙️ 城市交易金额排行（实时）</div>
+        <div id="barChart"></div>
+    </div>
+</div>
+
+<script>
+var mapChart = echarts.init(document.getElementById('mapChart'));
+var barChart = echarts.init(document.getElementById('barChart'));
+
+// 城市坐标映射
+var geoCoordMap = {
+    '北京': [116.46, 39.92], '上海': [121.48, 31.22], '广州': [113.23, 23.16],
+    '深圳': [114.07, 22.62], '杭州': [120.19, 30.26], '成都': [104.06, 30.67],
+    '武汉': [114.31, 30.52], '南京': [118.78, 32.04]
+};
+
+var cities = ['北京','上海','广州','深圳','杭州','成都','武汉','南京'];
+var cityValues = [0,0,0,0,0,0,0,0];
+
+// 地图散点图（中国地图 + 散点大小表示金额）
+var mapOption = {
+    title: { text: '全国交易金额分布图', subtext: '气泡大小代表交易金额',
+             textStyle: { color: '#e0e6ed' }, subtextStyle: { color: '#8b9dc3' } },
+    tooltip: { trigger: 'item', formatter: function(p) { return p.name + '<br/>交易金额: ¥' + (p.value[2]||0).toFixed(0); } },
+    geo: {
+        map: 'china',
+        roam: true,
+        itemStyle: { areaColor: '#1a2140', borderColor: '#2a3a6a' },
+        emphasis: { itemStyle: { areaColor: '#2a3a6a' } }
+    },
+    series: [{
+        type: 'effectScatter',
+        coordinateSystem: 'geo',
+        data: cities.map((c, i) => ({ name: c, value: geoCoordMap[c].concat(0) })),
+        symbolSize: function(val) { return Math.max(10, Math.min(val[2]/1000, 50)); },
+        showEffectOn: 'render',
+        rippleEffect: { brushType: 'stroke', scale: 4 },
+        itemStyle: { color: '#00d4ff' },
+        label: { show: true, formatter: '{b}', position: 'right', color: '#e0e6ed' }
+    }]
+};
+
+// 降级方案：如果没有中国地图js，用柱状图替代
+try {
+    mapChart.setOption(mapOption);
+    // 尝试加载中国地图
+    $.get('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json', function(geoJson) {
+        echarts.registerMap('china', geoJson);
+        mapChart.setOption(mapOption);
+    }).fail(function() {
+        // 降级：显示城市柱状图
+        document.getElementById('mapChart').parentElement.innerHTML += '<p style="color:#8b9dc3;text-align:center;">(中国地图加载中，使用柱状图替代)</p>';
+    });
+} catch(e) {
+    console.log('Map not available');
+}
+
+// 城市排行柱状图
+var barOption = {
+    title: { text: '实时城市排行', textStyle: { color: '#e0e6ed' } },
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    xAxis: { type: 'value', axisLabel: { color: '#8b9dc3' },
+             splitLine: { lineStyle: { color: 'rgba(255,255,255,0.08)' } } },
+    yAxis: { type: 'category', data: cities, axisLabel: { color: '#8b9dc3' },
+             inverse: true },
+    series: [{
+        type: 'bar', data: [0,0,0,0,0,0,0,0],
+        itemStyle: {
+            color: new echarts.graphic.LinearGradient(0,0,1,0,
+                [{offset:0, color:'#0066cc'}, {offset:1, color:'#00d4ff'}])
+        },
+        label: { show: true, position: 'right', color: '#e0e6ed',
+                 formatter: function(p) { return '¥' + p.value.toFixed(0); } }
+    }]
+};
+barChart.setOption(barOption);
+
+// 数据更新
+$(document).ready(function() {
+    var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + '/dashboard');
+    socket.on('server_response', function(res) {
+        var d = res.data;
+        // 更新城市数据
+        for (var i = 0; i < 8; i++) {
+            cityValues[i] = parseFloat(d[1+i]) || 0;
+        }
+
+        // 更新地图散点
+        mapOption.series[0].data = cities.map((c, i) => ({
+            name: c,
+            value: geoCoordMap[c].concat(cityValues[i])
+        }));
+        mapChart.setOption(mapOption);
+
+        // 更新排行
+        var sorted = cities.map((c, i) => ({ name: c, value: cityValues[i] }))
+                           .sort((a, b) => a.value - b.value);
+        barOption.yAxis.data = sorted.map(s => s.name);
+        barOption.series[0].data = sorted.map(s => s.value);
+        barChart.setOption(barOption);
+    });
+});
+
+window.onresize = function() { mapChart.resize(); barChart.resize(); };
+</script>
+</body>
+</html>
